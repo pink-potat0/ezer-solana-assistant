@@ -2,11 +2,42 @@ import { API_CHAT_ENDPOINT, SYSTEM_PROMPT } from "./config.js";
 import { fetchFreshContext, looksLikeKnowledgeCutoffReply } from "./context.js";
 import { extractPriceQuery, getCryptoPriceResponse } from "./marketData.js";
 
-async function requestAssistantReply(messages) {
+function buildBaseConversation(userMessage, freshContext) {
+  const conversation = [{ role: "system", content: SYSTEM_PROMPT }];
+
+  if (freshContext) {
+    conversation.push({
+      role: "system",
+      content:
+        `Recent external context (fetched at ${new Date().toISOString()}):\n` +
+        `${freshContext}\n\n` +
+        "Use this context for current-events questions.",
+    });
+  }
+
+  conversation.push({ role: "user", content: userMessage });
+  return conversation;
+}
+
+function buildRetryConversation(userMessage, forcedContext) {
+  return [
+    { role: "system", content: SYSTEM_PROMPT },
+    {
+      role: "system",
+      content:
+        `Verified external context (fetched at ${new Date().toISOString()}):\n` +
+        `${forcedContext}\n\n` +
+        "Answer directly from this context and do not mention model knowledge cutoffs.",
+    },
+    { role: "user", content: userMessage },
+  ];
+}
+
+async function requestAssistantReply(conversation) {
   const response = await fetch(API_CHAT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages: conversation }),
   });
 
   if (!response.ok) {
@@ -34,20 +65,7 @@ async function getBotResponse(userMessage) {
   if (priceQuery) return getCryptoPriceResponse(priceQuery);
 
   const freshContext = await fetchFreshContext(userMessage);
-  const messages = [{ role: "system", content: SYSTEM_PROMPT }];
-
-  if (freshContext) {
-    messages.push({
-      role: "system",
-      content:
-        `Recent external context (fetched at ${new Date().toISOString()}):\n` +
-        `${freshContext}\n\n` +
-        "Prefer this recent context for current-events questions.",
-    });
-  }
-
-  messages.push({ role: "user", content: userMessage });
-  const firstReply = await requestAssistantReply(messages);
+  const firstReply = await requestAssistantReply(buildBaseConversation(userMessage, freshContext));
 
   if (!looksLikeKnowledgeCutoffReply(firstReply)) {
     return firstReply || "Sorry, I couldn't generate a response.";
@@ -56,19 +74,9 @@ async function getBotResponse(userMessage) {
   const forcedContext = freshContext || (await fetchFreshContext(userMessage, true));
   if (!forcedContext) return firstReply || "Sorry, I couldn't generate a response.";
 
-  const retryMessages = [
-    { role: "system", content: SYSTEM_PROMPT },
-    {
-      role: "system",
-      content:
-        `Verified external context (fetched at ${new Date().toISOString()}):\n` +
-        `${forcedContext}\n\n` +
-        "Answer directly using this context. Do not include knowledge-cutoff disclaimers.",
-    },
-    { role: "user", content: userMessage },
-  ];
-
-  const retriedReply = await requestAssistantReply(retryMessages);
+  const retriedReply = await requestAssistantReply(
+    buildRetryConversation(userMessage, forcedContext),
+  );
   return retriedReply || firstReply || "Sorry, I couldn't generate a response.";
 }
 
