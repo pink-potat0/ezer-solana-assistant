@@ -35,9 +35,7 @@ Output Format:
 - For step-by-step guides or explanations, use ordered or unordered lists.
 - Use placeholders [like this] for generalizable examples.
 - Keep responses conversational and accessible, suitable for both beginners and experienced users.`;
-    const APP_CONFIG = (typeof window !== "undefined" && window.APP_CONFIG) || {};
-    const OPENAI_API_KEY = APP_CONFIG.OPENAI_API_KEY || "";
-    const CMC_API_KEY = APP_CONFIG.CMC_API_KEY || "";
+    const CMC_API_KEY = "";
     const CMC_QUOTES_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest";
     // Match IDs from your `index.html`
     const chatForm = document.getElementById("chat-form");
@@ -179,11 +177,6 @@ Output Format:
         return value.trim();
     }
     async function getBotResponse(userMessage) {
-        const apiKey = OPENAI_API_KEY;
-        if (!apiKey || apiKey === "YOUR_OPENAI_API_KEY") {
-            throw new Error("Missing OpenAI API key. Set `OPENAI_API_KEY` in your .env file.");
-        }
-        const apiUrl = "https://api.openai.com/v1/chat/completions";
         const priceQuery = extractPriceQuery(userMessage);
         if (priceQuery) {
             return getCryptoPriceResponse(priceQuery);
@@ -201,7 +194,7 @@ Output Format:
             });
         }
         messages.push({ role: "user", content: userMessage });
-        let firstReply = await requestOpenAIReply(apiUrl, apiKey, messages);
+        let firstReply = await requestAssistantReply(messages);
         // Retry once with forced web context if response sounds like stale-knowledge fallback.
         if (looksLikeKnowledgeCutoffReply(firstReply)) {
             const forcedContext = freshContext || (await fetchFreshContext(userMessage, true));
@@ -216,22 +209,20 @@ Output Format:
                     },
                     { role: "user", content: userMessage },
                 ];
-                const retriedReply = await requestOpenAIReply(apiUrl, apiKey, retryMessages);
+                const retriedReply = await requestAssistantReply(retryMessages);
                 if (retriedReply)
                     return retriedReply;
             }
         }
         return firstReply || "Sorry, I couldn't generate a response.";
     }
-    async function requestOpenAIReply(apiUrl, apiKey, messages) {
-        const response = await fetch(apiUrl, {
+    async function requestAssistantReply(messages) {
+        const response = await fetch("/api/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini",
                 messages,
             }),
         });
@@ -252,16 +243,12 @@ Output Format:
                 }
                 catch { }
             }
-            const fallback = `OpenAI request failed (${response.status})`;
+            const fallback = `Assistant request failed (${response.status})`;
             throw new Error(details || fallback);
         }
         const data = await response.json();
-        if (data &&
-            data.choices &&
-            data.choices[0] &&
-            data.choices[0].message &&
-            typeof data.choices[0].message.content === "string") {
-            return data.choices[0].message.content.trim();
+        if (data && typeof data.content === "string") {
+            return data.content.trim();
         }
         return "";
     }
