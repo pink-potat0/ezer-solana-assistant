@@ -1,0 +1,25 @@
+{
+  "name": "ezersolanaai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pink-potat0/ezer-solana-assistant.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pink-potat0/ezer-solana-assistant/issues"
+  },
+  "homepage": "https://github.com/pink-potat0/ezer-solana-assistant#readme",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
