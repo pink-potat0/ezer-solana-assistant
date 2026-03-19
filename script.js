@@ -15,6 +15,8 @@ function animate() {
 }
 animate();
 document.addEventListener("DOMContentLoaded", () => {
+    const API_CHAT_ENDPOINT = "/api/chat";
+    const DEFAULT_ASSISTANT_ERROR = "Sorry, something went wrong. Please try again later (check the browser console).";
     const SOLANA_ASSISTANT_SYSTEM_PROMPT = `You are Ezer, a Solana-focused cryptocurrency chat assistant. Provide accurate, clear answers to any questions about cryptocurrency, the Solana blockchain, or trading Solana ecosystem tokens, including Solana memecoins. Explain complex concepts in simple terms, offering educational guidance on Solana-specific topics and memecoin trading strategies.
 
 For multi-part or complex queries, use step-by-step reasoning before delivering your answers. Always prioritize accuracy, transparency, and up-to-date knowledge. If recent context is provided in the prompt, treat it as higher-priority than older internal knowledge. If you are unsure, clearly say so instead of guessing. If you encounter unclear or ambiguous queries, ask clarifying questions as needed before answering. Continue assisting or follow up with the user until their objectives are fully met.
@@ -74,9 +76,8 @@ Output Format:
         }
         catch (error) {
             console.error("Error fetching bot response:", error);
-            const errText = error && error.message ? error.message : "";
-            const msg = errText ||
-                "Sorry, something went wrong. Please try again later (check the browser console).";
+            const errText = getErrorMessage(error);
+            const msg = errText || DEFAULT_ASSISTANT_ERROR;
             await typewriterToElement(typingEl, formatAssistantText(msg));
             typingEl.classList.remove("typing");
             typingEl.classList.add("typewriter-done");
@@ -217,7 +218,7 @@ Output Format:
         return firstReply || "Sorry, I couldn't generate a response.";
     }
     async function requestAssistantReply(messages) {
-        const response = await fetch("/api/chat", {
+        const response = await fetch(API_CHAT_ENDPOINT, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -251,6 +252,9 @@ Output Format:
             return data.content.trim();
         }
         return "";
+    }
+    function getErrorMessage(error) {
+        return error && typeof error.message === "string" ? error.message : "";
     }
     function extractPriceQuery(message) {
         const text = String(message || "").trim();
