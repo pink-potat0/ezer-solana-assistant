@@ -4,8 +4,7 @@
   "description": "",
   "main": "script.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -19,7 +18,8 @@
     "url": "https://github.com/pink-potat0/ezer-solana-assistant/issues"
   },
   "homepage": "https://github.com/pink-potat0/ezer-solana-assistant#readme",
-  "devDependencies": {
-    "typescript": "^5.9.2"
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2"
   }
 }

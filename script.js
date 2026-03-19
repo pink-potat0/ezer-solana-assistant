@@ -35,8 +35,9 @@ Output Format:
 - For step-by-step guides or explanations, use ordered or unordered lists.
 - Use placeholders [like this] for generalizable examples.
 - Keep responses conversational and accessible, suitable for both beginners and experienced users.`;
-    const CMC_API_KEY = (typeof window !== "undefined" && window.CMC_API_KEY) ||
-        "YOUR_COINMARKETCAP_API_KEY";
+    const APP_CONFIG = (typeof window !== "undefined" && window.APP_CONFIG) || {};
+    const OPENAI_API_KEY = APP_CONFIG.OPENAI_API_KEY || "";
+    const CMC_API_KEY = APP_CONFIG.CMC_API_KEY || "";
     const CMC_QUOTES_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest";
     // Match IDs from your `index.html`
     const chatForm = document.getElementById("chat-form");
@@ -178,10 +179,9 @@ Output Format:
         return value.trim();
     }
     async function getBotResponse(userMessage) {
-        // Do not hardcode secrets in client code. Inject this from a safe source.
-        const apiKey = (typeof window !== "undefined" && window.OPENAI_API_KEY) || "";
-        if (!apiKey) {
-            throw new Error("Missing OpenAI API key. Set `window.OPENAI_API_KEY` before using the assistant.");
+        const apiKey = OPENAI_API_KEY;
+        if (!apiKey || apiKey === "YOUR_OPENAI_API_KEY") {
+            throw new Error("Missing OpenAI API key. Set `OPENAI_API_KEY` in your .env file.");
         }
         const apiUrl = "https://api.openai.com/v1/chat/completions";
         const priceQuery = extractPriceQuery(userMessage);
@@ -246,7 +246,12 @@ Output Format:
                     details = errData.error.message;
                 }
             }
-            catch { }
+            catch {
+                try {
+                    details = await response.text();
+                }
+                catch { }
+            }
             const fallback = `OpenAI request failed (${response.status})`;
             throw new Error(details || fallback);
         }
@@ -310,7 +315,7 @@ Output Format:
     }
     async function getCryptoPriceResponse(identifier) {
         if (!CMC_API_KEY || CMC_API_KEY === "YOUR_COINMARKETCAP_API_KEY") {
-            return "I need a CoinMarketCap API key to fetch live prices. Set `window.CMC_API_KEY` and try again.";
+            return "I need a CoinMarketCap API key to fetch live prices. Set `CMC_API_KEY` in your .env file and try again.";
         }
         const maybeSymbol = identifier.toUpperCase().replace(/\s+/g, "");
         const mappedSymbol = coinNameToSymbol(identifier);
