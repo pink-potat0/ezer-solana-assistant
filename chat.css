@@ -24,6 +24,9 @@ body {
         radial-gradient(circle at 20% 20%, rgba(42, 127, 255, 0.2), transparent 45%),
         radial-gradient(circle at 80% 0%, rgba(86, 183, 255, 0.18), transparent 40%),
         linear-gradient(180deg, var(--bg-dark-2), var(--bg-dark));
+    background-size: 140% 140%, 140% 140%, 100% 100%;
+    background-position: 0% 50%, 100% 50%, 50% 50%;
+    animation: gradientDrift 14s ease-in-out infinite;
     color: var(--text-primary);
     font-family: "Inter", sans-serif;
     padding: 20px;
@@ -31,6 +34,18 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+}
+
+@keyframes gradientDrift {
+    0% {
+        background-position: 0% 45%, 100% 55%, 50% 50%;
+    }
+    50% {
+        background-position: 100% 55%, 0% 45%, 50% 50%;
+    }
+    100% {
+        background-position: 0% 45%, 100% 55%, 50% 50%;
+    }
 }
 
 .card {
